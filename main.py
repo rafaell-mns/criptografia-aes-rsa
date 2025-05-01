@@ -1,16 +1,26 @@
 import base64
 from Crypto.Cipher import AES, PKCS1_v1_5
-from Crypto.PublicKey import RSA
-from Crypto.Random import get_random_bytes
+from Crypto.PublicKey import RSA # type: ignore
+from Crypto.Random import get_random_bytes # type: ignore
 import os
 
-def gerar_chaves(nome_privada="chave_privada.pem", nome_publica="chave_publica.pem", tamanho=2048):
+from Crypto.PublicKey import RSA
+
+def gerar_chaves(nome_privada, nome_publica, tamanho):
     chave = RSA.generate(tamanho)
+    chave_privada = chave.export_key()
+    chave_publica = chave.publickey().export_key()
+
     with open(nome_privada, "wb") as f:
-        f.write(chave.export_key())
+        f.write(chave_privada)
     with open(nome_publica, "wb") as f:
-        f.write(chave.publickey().export_key())
-    print(f"Chaves RSA geradas com sucesso:\n{nome_privada}\n{nome_publica}")
+        f.write(chave_publica)
+
+    print(f"\nChaves RSA de {tamanho} bits geradas com sucesso!")
+    print(f"Chave privada salva em: {nome_privada}")
+    print(f"Chave pública salva em: {nome_publica}\n")
+
+
 
 
 def criar_envelope(entrada, chave_publica_path, tamanho_aes, modo_aes, saida_base64,
@@ -116,8 +126,11 @@ def menu():
         opcao = input("Escolha uma opção: ")
 
         if opcao == "1":
-            tamanho = int(input("Tamanho da chave (1024 ou 2048): "))
-            gerar_chaves(tamanho)
+            tamanho = input("Tamanho da chave (1024 ou 2048): ")
+            if tamanho in ["1024", "2048"]:  # Verifica se a entrada é válida
+                gerar_chaves(int(tamanho))  # Converte a entrada para número inteiro
+            else:
+                print("Tamanho inválido. Use 1024 ou 2048.")
         elif opcao == "2":
             entrada = input("Arquivo de entrada (ex: msg.txt): ")
             chave_pub = input("Chave pública (.pem): ")

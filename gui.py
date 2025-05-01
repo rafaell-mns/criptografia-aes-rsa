@@ -1,14 +1,17 @@
+# GUI para o projeto de Envelope Digital
 import tkinter as tk
 import os
-from tkinter import filedialog, messagebox, ttk
+from tkinter import filedialog, messagebox, ttk, scrolledtext
 from main import gerar_chaves, criar_envelope, abrir_envelope
+import subprocess
+import platform
 
 
 class EnvelopeDigitalApp:
     def __init__(self, root):
         self.root = root
         self.root.title("Envelope Digital - Segurança em Sistemas")
-        self.root.geometry("500x700")
+        self.root.geometry("600x750")
 
         # Variáveis globais
         self.tamanho_var = tk.StringVar(value="2048")
@@ -18,6 +21,10 @@ class EnvelopeDigitalApp:
         self.modo_aes2_var = tk.StringVar(value="ECB")
         self.entrada_format_var = tk.StringVar(value="Base64")
 
+        # Painel de log
+        self.log_text = scrolledtext.ScrolledText(self.root, height=6, state='disabled', bg="#f0f0f0")
+        self.log_text.pack(side="bottom", fill="x")
+
         # Frames
         self.frame_menu = self.criar_frame_menu()
         self.frame_gerar_chaves = self.criar_frame_gerar_chaves()
@@ -25,10 +32,40 @@ class EnvelopeDigitalApp:
         self.frame_abrir_envelope = self.criar_frame_abrir_envelope()
 
         self.mostrar_frame(self.frame_menu)
+        
+    def abrir_log(self):
+        log_path = "log.txt"
+        if not os.path.exists(log_path):
+            with open(log_path, "w", encoding="utf-8") as f:
+                f.write("")
+
+        try:
+            sistema = platform.system()
+            if sistema == "Windows":
+                os.startfile(log_path)
+            elif sistema == "Darwin":  # macOS
+                subprocess.call(["open", log_path])
+            else:  # Linux
+                subprocess.call(["xdg-open", log_path])
+        except Exception as e:
+            messagebox.showerror("Erro", f"Não foi possível abrir o log: {e}")
+
+
+    def log(self, msg):
+        self.log_text.config(state='normal')
+        self.log_text.insert(tk.END, msg + "\n")
+        self.log_text.see(tk.END)
+        self.log_text.config(state='disabled')
+
+        # Salva no arquivo de log
+        with open("log.txt", "a", encoding="utf-8") as f:
+            f.write(msg + "\n")
+
 
     def mostrar_frame(self, frame):
         for widget in self.root.winfo_children():
-            widget.pack_forget()
+            if widget not in [self.log_text]:
+                widget.pack_forget()
         frame.pack(fill="both", expand=True)
 
     def criar_frame_menu(self):
@@ -36,6 +73,7 @@ class EnvelopeDigitalApp:
         ttk.Label(frame, text="Escolha uma opção:", font=("Arial", 16)).pack(pady=20)
         ttk.Button(frame, text="Criptografar", command=self.mostrar_opcoes_criptografia).pack(pady=10)
         ttk.Button(frame, text="Descriptografar", command=lambda: self.mostrar_frame(self.frame_abrir_envelope)).pack(pady=10)
+        ttk.Button(frame, text="🔍 Ver log completo", command=self.abrir_log).pack(pady=10)
         return frame
 
     def mostrar_opcoes_criptografia(self):
@@ -69,18 +107,10 @@ class EnvelopeDigitalApp:
 
     def criar_frame_criar_envelope(self):
         frame = ttk.Frame(self.root)
-
         ttk.Label(frame, text="Criar Envelope Digital", font=("Arial", 16)).pack(pady=20)
 
-        ttk.Label(frame, text="Mensagem de entrada (arquivo .txt ou binário):").pack(anchor="w", padx=5, pady=2)
-        self.entrada_msg = ttk.Entry(frame, width=50)
-        self.entrada_msg.pack(padx=5, fill="x")
-        ttk.Button(frame, text="Selecionar Arquivo", command=lambda: self.escolher_arquivo(self.entrada_msg)).pack(pady=2)
-
-        ttk.Label(frame, text="Chave pública do destinatário (.pem):").pack(anchor="w", padx=5, pady=2)
-        self.entrada_pub = ttk.Entry(frame, width=50)
-        self.entrada_pub.pack(padx=5, fill="x")
-        ttk.Button(frame, text="Selecionar Arquivo", command=lambda: self.escolher_arquivo(self.entrada_pub)).pack(pady=2)
+        self.entrada_msg = self.criar_input_arquivo(frame, "Mensagem de entrada (arquivo .txt ou binário):")
+        self.entrada_pub = self.criar_input_arquivo(frame, "Chave pública do destinatário (.pem):")
 
         ttk.Label(frame, text="Escolha o tamanho da chave AES (em bytes):").pack(anchor="w", padx=5, pady=2)
         aes_menu = ttk.Combobox(frame, textvariable=self.aes_tam_var, values=["16", "24", "32"], state="readonly")
@@ -104,7 +134,6 @@ class EnvelopeDigitalApp:
 
         ttk.Button(frame, text="Criar Envelope", command=self.executar_criar_envelope).pack(pady=10)
         ttk.Button(frame, text="Voltar", command=lambda: self.mostrar_frame(self.frame_menu)).pack(pady=10)
-
         return frame
 
     def criar_frame_abrir_envelope(self):
@@ -139,62 +168,79 @@ class EnvelopeDigitalApp:
 
     def escolher_arquivo(self, entry, salvar=False):
         caminho = filedialog.asksaveasfilename() if salvar else filedialog.askopenfilename()
-        entry.delete(0, tk.END)
-        entry.insert(0, caminho)
+        if caminho:
+            entry.delete(0, tk.END)
+            entry.insert(0, caminho)
 
     def executar_gerar_chaves(self):
         try:
+            nome_privada = self.nome_privada_entry.get().strip()
+            nome_publica = self.nome_publica_entry.get().strip()
+            if not nome_privada or not nome_publica:
+                raise ValueError("Nomes de arquivos de chave não podem estar vazios.")
             tamanho = int(self.tamanho_var.get())
-            nome_privada = self.nome_privada_entry.get().strip() + ".pem"
-            nome_publica = self.nome_publica_entry.get().strip() + ".pem"
-            gerar_chaves(nome_privada=nome_privada, nome_publica=nome_publica, tamanho=tamanho)
-            messagebox.showinfo("Sucesso", f"Chaves geradas:\n{nome_privada}\n{nome_publica}")
+            gerar_chaves(nome_privada + ".pem", nome_publica + ".pem", tamanho)
+            messagebox.showinfo("Sucesso", "Chaves geradas com sucesso!")
+            self.log(f"Chaves RSA geradas: {nome_privada}.pem, {nome_publica}.pem")
         except Exception as e:
-            messagebox.showerror("Erro", str(e))
+            messagebox.showerror("Erro ao gerar chaves", str(e))
+            self.log(f"Erro ao gerar chaves: {str(e)}")
 
     def executar_criar_envelope(self):
         try:
-            if not self.entrada_msg.get():
-                raise ValueError("Por favor, selecione ou crie um arquivo de mensagem de entrada.")
-            if not self.entrada_pub.get():
-                raise ValueError("Por favor, selecione o arquivo de chave pública.")
-            if self.aes_tam_var.get() not in ["16", "24", "32"]:
-                raise ValueError("Tamanho da chave AES inválido. Use 16, 24 ou 32 bytes.")
-            if not self.saida_msg_entry.get():
-                raise ValueError("Por favor, informe o nome do arquivo de saída para a mensagem cifrada.")
-            if not self.saida_chave_entry.get():
-                raise ValueError("Por favor, informe o nome do arquivo de saída para a chave cifrada.")
+            campos = {
+                "Mensagem de entrada": self.entrada_msg.get(),
+                "Chave pública": self.entrada_pub.get(),
+                "Mensagem cifrada (nome)": self.saida_msg_entry.get(),
+                "Chave cifrada (nome)": self.saida_chave_entry.get(),
+            }
+            for campo, valor in campos.items():
+                if not valor:
+                    raise ValueError(f"O campo '{campo}' está vazio.")
 
-            if not os.path.exists(self.entrada_msg.get()):
-                raise FileNotFoundError(f"Arquivo de mensagem '{self.entrada_msg.get()}' não encontrado.")
-            if not os.path.exists(self.entrada_pub.get()):
-                raise FileNotFoundError(f"Arquivo de chave pública '{self.entrada_pub.get()}' não encontrado.")
+            if not os.path.exists(campos["Mensagem de entrada"]):
+                raise FileNotFoundError("Arquivo de mensagem não encontrado.")
+            if not os.path.exists(campos["Chave pública"]):
+                raise FileNotFoundError("Arquivo de chave pública não encontrado.")
 
-            with open(self.entrada_pub.get(), "r") as f:
-                conteudo_chave = f.read()
-                if "PRIVATE KEY" in conteudo_chave:
-                    raise ValueError("O arquivo selecionado é uma chave privada. Por favor, selecione uma chave pública válida.")
+            with open(campos["Chave pública"], "r") as f:
+                if "PRIVATE KEY" in f.read():
+                    raise ValueError("Chave pública inválida. Parece ser uma chave privada.")
+
+            output_dir = "output"
+            os.makedirs(output_dir, exist_ok=True)
 
             criar_envelope(
-                entrada=self.entrada_msg.get(),
-                chave_publica_path=self.entrada_pub.get(),
+                entrada=campos["Mensagem de entrada"],
+                chave_publica_path=campos["Chave pública"],
                 tamanho_aes=int(self.aes_tam_var.get()),
                 modo_aes=self.modo_aes_var.get(),
                 saida_base64=(self.saida_var.get() == "Base64"),
-                saida_msg_path=self.saida_msg_entry.get(),
-                saida_chave_path=self.saida_chave_entry.get()
+                saida_msg_path=os.path.join(output_dir, self.saida_msg_entry.get()),
+                saida_chave_path=os.path.join(output_dir, self.saida_chave_entry.get())
             )
             messagebox.showinfo("Sucesso", "Envelope criado com sucesso!")
+            self.log("Envelope digital criado com sucesso.")
             self.mostrar_frame(self.frame_menu)
-        except ValueError as ve:
-            messagebox.showerror("Erro de Validação", str(ve))
-        except FileNotFoundError as fnfe:
-            messagebox.showerror("Erro de Arquivo", str(fnfe))
         except Exception as e:
-            messagebox.showerror("Erro", f"Ocorreu um erro inesperado: {str(e)}")
+            messagebox.showerror("Erro ao criar envelope", str(e))
+            self.log(f"Erro ao criar envelope: {str(e)}")
 
     def executar_abrir_envelope(self):
         try:
+            campos = {
+                "Chave privada": self.entrada_priv.get(),
+                "Chave cifrada": self.entrada_chave_cifrada.get(),
+                "Mensagem cifrada": self.entrada_msg_cifrada.get(),
+                "Saída da mensagem": self.saida_msg_decifrada.get()
+            }
+            for campo, valor in campos.items():
+                if not valor:
+                    raise ValueError(f"O campo '{campo}' está vazio.")
+
+            if self.modo_aes2_var.get() == "CBC" and not self.entrada_iv.get():
+                raise ValueError("O campo 'Arquivo IV' é obrigatório no modo CBC.")
+
             abrir_envelope(
                 chave_privada_path=self.entrada_priv.get(),
                 modo_aes=self.modo_aes2_var.get(),
@@ -205,8 +251,10 @@ class EnvelopeDigitalApp:
                 path_saida=self.saida_msg_decifrada.get()
             )
             messagebox.showinfo("Sucesso", "Envelope aberto com sucesso!")
+            self.log("Envelope digital aberto com sucesso.")
         except Exception as e:
-            messagebox.showerror("Erro", str(e))
+            messagebox.showerror("Erro ao abrir envelope", str(e))
+            self.log(f"Erro ao abrir envelope: {str(e)}")
 
 
 if __name__ == "__main__":
