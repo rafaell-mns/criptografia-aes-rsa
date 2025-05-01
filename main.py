@@ -4,13 +4,14 @@ from Crypto.PublicKey import RSA
 from Crypto.Random import get_random_bytes
 import os
 
-def gerar_chaves(tamanho=2048):
+def gerar_chaves(nome_privada="chave_privada.pem", nome_publica="chave_publica.pem", tamanho=2048):
     chave = RSA.generate(tamanho)
-    with open("chave_privada.pem", "wb") as f:
+    with open(nome_privada, "wb") as f:
         f.write(chave.export_key())
-    with open("chave_publica.pem", "wb") as f:
+    with open(nome_publica, "wb") as f:
         f.write(chave.publickey().export_key())
-    print("Chaves RSA geradas com sucesso!")
+    print(f"Chaves RSA geradas com sucesso:\n{nome_privada}\n{nome_publica}")
+
 
 def criar_envelope(entrada, chave_publica_path, tamanho_aes, modo_aes, saida_base64,
                    saida_msg_path="mensagem_cifrada", saida_chave_path="chave_cifrada", chave_aes_fixa=None):

@@ -10,13 +10,14 @@ def escolher_arquivo(entry):
 
 
 def executar_gerar_chaves():
-    tamanho = tamanho_var.get()
-    if tamanho not in ["1024", "2048"]:
-        messagebox.showerror(
-            "Erro", "Tamanho da chave inválido (1024 ou 2048)")
-        return
-    gerar_chaves(int(tamanho))
-    messagebox.showinfo("Sucesso", "Chaves geradas com sucesso!")
+    try:
+        tamanho = int(tamanho_var.get())
+        nome_privada = nome_privada_entry.get().strip() + ".pem"
+        nome_publica = nome_publica_entry.get().strip() + ".pem"
+        gerar_chaves(nome_privada=nome_privada, nome_publica=nome_publica, tamanho=tamanho)
+        messagebox.showinfo("Sucesso", f"Chaves geradas:\n{nome_privada}\n{nome_publica}")
+    except Exception as e:
+        messagebox.showerror("Erro", str(e))
 
 
 def executar_criar_envelope():
@@ -101,6 +102,17 @@ ttkk_lbl1.pack(anchor="w", padx=5, pady=2)
 tamanho_var = tk.StringVar(value="2048")
 tamanho_menu = ttk.Combobox(frame1, textvariable=tamanho_var, values=["1024", "2048"], state="readonly")
 tamanho_menu.pack(padx=5, pady=5, fill="x")
+
+ttk.Label(frame1, text="Nome da chave privada (sem .pem):").pack(anchor="w", padx=5, pady=2)
+nome_privada_entry = ttk.Entry(frame1)
+nome_privada_entry.insert(0, "chave_privada")
+nome_privada_entry.pack(fill="x", padx=5)
+
+ttk.Label(frame1, text="Nome da chave pública (sem .pem):").pack(anchor="w", padx=5, pady=2)
+nome_publica_entry = ttk.Entry(frame1)
+nome_publica_entry.insert(0, "chave_publica")
+nome_publica_entry.pack(fill="x", padx=5)
+
 
 btn_gerar = ttk.Button(frame1, text="Gerar Chaves", command=executar_gerar_chaves)
 btn_gerar.pack(pady=5)
