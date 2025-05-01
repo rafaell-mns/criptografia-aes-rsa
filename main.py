@@ -59,29 +59,39 @@ def criar_envelope(entrada, chave_publica_path, tamanho_aes, modo_aes, saida_bas
 
     print("Envelope criado com sucesso!")
 
-def abrir_envelope(chave_privada_path, modo_aes, entrada_base64):
-    if not os.path.exists("chave_cifrada.txt") or not os.path.exists("mensagem_cifrada.txt"):
-        raise FileNotFoundError("Arquivos de entrada não encontrados.")
+def abrir_envelope(chave_privada_path, modo_aes, entrada_base64,
+                   path_chave_cifrada="chave_cifrada.txt",
+                   path_msg_cifrada="mensagem_cifrada.txt",
+                   path_iv="iv.txt",
+                   path_saida="mensagem_decifrada.txt"):
+    if not all(map(os.path.exists, [chave_privada_path, path_chave_cifrada, path_msg_cifrada])):
+        raise FileNotFoundError("Algum dos arquivos necessários não foi encontrado.")
 
     with open(chave_privada_path, "rb") as f:
-        priv_key = RSA.import_key(f.read())
-    cipher_rsa = PKCS1_v1_5.new(priv_key)
+        chave_privada = RSA.import_key(f.read())
 
-    with open("chave_cifrada.txt", "r") as f:
+    cipher_rsa = PKCS1_v1_5.new(chave_privada)
+
+    with open(path_chave_cifrada, "r") as f:
         chave_cifrada_str = f.read().strip()
         chave_cifrada = base64.b64decode(chave_cifrada_str) if entrada_base64 else bytes.fromhex(chave_cifrada_str)
 
     chave_aes_encoded = cipher_rsa.decrypt(chave_cifrada, None)
+    if chave_aes_encoded is None:
+        raise ValueError("Erro ao decifrar a chave AES.")
+
     chave_aes = base64.b64decode(chave_aes_encoded)
 
-    with open("mensagem_cifrada.txt", "r") as f:
+    with open(path_msg_cifrada, "r") as f:
         msg_cifrada_str = f.read().strip()
         msg_cifrada = base64.b64decode(msg_cifrada_str) if entrada_base64 else bytes.fromhex(msg_cifrada_str)
 
     iv = None
     if modo_aes == "CBC":
-        with open("iv.txt", "r") as f:
-            iv_str = f.read()
+        if not os.path.exists(path_iv):
+            raise FileNotFoundError("IV necessário para modo CBC não encontrado.")
+        with open(path_iv, "r") as f:
+            iv_str = f.read().strip()
             iv = base64.b64decode(iv_str) if entrada_base64 else bytes.fromhex(iv_str)
 
     cipher_aes = AES.new(chave_aes, AES.MODE_CBC, iv) if modo_aes == "CBC" else AES.new(chave_aes, AES.MODE_ECB)
@@ -90,11 +100,11 @@ def abrir_envelope(chave_privada_path, modo_aes, entrada_base64):
     padding = dados_decifrados[-1]
     dados_decifrados = dados_decifrados[:-padding]
 
-    with open("mensagem_decifrada.txt", "wb") as f:
+    with open(path_saida, "wb") as f:
         f.write(dados_decifrados)
 
-    print("Envelope aberto com sucesso!")
-    print("Arquivo restaurado: mensagem_decifrada.txt")
+    print(f"Envelope aberto com sucesso! Mensagem salva em '{path_saida}'")
+
 
 def menu():
     while True:
