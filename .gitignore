@@ -1,6 +1,5 @@
 # Ignorar pastas temporárias
 __pycache__/
-pucache/
 
 # Ignorar arquivos de chave e criptografia
 *.pem
