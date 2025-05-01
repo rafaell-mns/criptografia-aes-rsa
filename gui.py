@@ -46,7 +46,7 @@ def executar_abrir_envelope():
 
 root = tk.Tk()
 root.title("Envelope Digital - Segurança em Sistemas")
-root.geometry("600x700")
+root.geometry("500x600")
 
 # Canvas e Scrollbar
 canvas = tk.Canvas(root)
@@ -56,11 +56,18 @@ canvas.configure(yscrollcommand=scrollbar.set)
 scrollbar.pack(side="right", fill="y")
 canvas.pack(side="left", fill="both", expand=True)
 
+# Adicionar suporte ao scroll do mouse
+def on_mouse_wheel(event):
+    canvas.yview_scroll(-1 * (event.delta // 120), "units")
+
+canvas.bind_all("<MouseWheel>", on_mouse_wheel)
+
 # Frame interno
 scrollable_frame = ttk.Frame(canvas)
 
 # Criar o window e guardar o ID para usar depois
 frame_id = canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+
 
 # Ajustar scrollregion dinamicamente
 def on_configure(event):
