@@ -144,8 +144,9 @@ class EnvelopeDigitalApp:
         self.entrada_chave_cifrada = self.criar_input_arquivo(frame, "Arquivo da chave AES cifrada:")
         self.entrada_msg_cifrada = self.criar_input_arquivo(frame, "Arquivo da mensagem cifrada:")
         self.entrada_iv = self.criar_input_arquivo(frame, "Arquivo IV (apenas se CBC):")
-        self.saida_msg_decifrada = self.criar_input_arquivo(frame, "Nome para salvar a mensagem decifrada:", salvar=True)
-
+        ttk.Label(frame, text="Nome para salvar a mensagem decifrada (com extensão):").pack(anchor="w", padx=5, pady=2)
+        self.saida_msg_decifrada = ttk.Entry(frame, width=50)
+        self.saida_msg_decifrada.pack(padx=5, fill="x")
         ttk.Label(frame, text="Modo de operação do AES usado na cifragem:").pack(anchor="w", padx=5, pady=2)
         modo2_menu = ttk.Combobox(frame, textvariable=self.modo_aes2_var, values=["ECB", "CBC"], state="readonly")
         modo2_menu.pack(padx=5, pady=2, fill="x")

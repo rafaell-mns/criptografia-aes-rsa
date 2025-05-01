@@ -53,7 +53,7 @@ def criar_envelope(entrada, chave_publica_path, tamanho_aes, modo_aes, saida_bas
     if saida_base64:
         msg_cifrada_str = base64.b64encode(msg_cifrada).decode()
         chave_cifrada_str = base64.b64encode(chave_cifrada).decode()
-        iv_saida = base64.b64encode(iv).decode() if iv else None
+        iv_saida = iv.hex() if iv else None
     else:
         msg_cifrada_str = msg_cifrada.hex()
         chave_cifrada_str = chave_cifrada.hex()
@@ -64,7 +64,7 @@ def criar_envelope(entrada, chave_publica_path, tamanho_aes, modo_aes, saida_bas
     with open(saida_chave_path + ext, "w") as f:
         f.write(chave_cifrada_str)
     if iv_saida:
-        with open("iv" + ext, "w") as f:
+        with open("iv.hex", "w") as f:
             f.write(iv_saida)
 
     print("Envelope criado com sucesso!")
@@ -72,7 +72,7 @@ def criar_envelope(entrada, chave_publica_path, tamanho_aes, modo_aes, saida_bas
 def abrir_envelope(chave_privada_path, modo_aes, entrada_base64,
                    path_chave_cifrada="chave_cifrada.txt",
                    path_msg_cifrada="mensagem_cifrada.txt",
-                   path_iv="iv.txt",
+                   path_iv="iv.hex",
                    path_saida="mensagem_decifrada.txt"):
     if not all(map(os.path.exists, [chave_privada_path, path_chave_cifrada, path_msg_cifrada])):
         raise FileNotFoundError("Algum dos arquivos necessários não foi encontrado.")
@@ -102,7 +102,7 @@ def abrir_envelope(chave_privada_path, modo_aes, entrada_base64,
             raise FileNotFoundError("IV necessário para modo CBC não encontrado.")
         with open(path_iv, "r") as f:
             iv_str = f.read().strip()
-            iv = base64.b64decode(iv_str) if entrada_base64 else bytes.fromhex(iv_str)
+            iv = bytes.fromhex(iv_str)
 
     cipher_aes = AES.new(chave_aes, AES.MODE_CBC, iv) if modo_aes == "CBC" else AES.new(chave_aes, AES.MODE_ECB)
     dados_decifrados = cipher_aes.decrypt(msg_cifrada)
