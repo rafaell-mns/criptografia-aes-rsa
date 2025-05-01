@@ -7,20 +7,21 @@ import os
 from Crypto.PublicKey import RSA
 
 def gerar_chaves(nome_privada, nome_publica, tamanho):
+    output_dir = "output/chaves_RSA"
+    os.makedirs(output_dir, exist_ok=True)
+
     chave = RSA.generate(tamanho)
     chave_privada = chave.export_key()
     chave_publica = chave.publickey().export_key()
 
-    with open(nome_privada, "wb") as f:
+    with open(os.path.join(output_dir, nome_privada), "wb") as f:
         f.write(chave_privada)
-    with open(nome_publica, "wb") as f:
+    with open(os.path.join(output_dir, nome_publica), "wb") as f:
         f.write(chave_publica)
 
     print(f"\nChaves RSA de {tamanho} bits geradas com sucesso!")
-    print(f"Chave privada salva em: {nome_privada}")
-    print(f"Chave pública salva em: {nome_publica}\n")
-
-
+    print(f"Chave privada salva em: {os.path.join(output_dir, nome_privada)}")
+    print(f"Chave pública salva em: {os.path.join(output_dir, nome_publica)}\n")
 
 
 def criar_envelope(entrada, chave_publica_path, tamanho_aes, modo_aes, saida_base64,
