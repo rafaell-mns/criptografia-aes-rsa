@@ -2,23 +2,28 @@ import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 from main import gerar_chaves, criar_envelope, abrir_envelope
 
+
 def escolher_arquivo(entry):
     caminho = filedialog.askopenfilename()
     entry.delete(0, tk.END)
     entry.insert(0, caminho)
 
+
 def executar_gerar_chaves():
     tamanho = tamanho_var.get()
     if tamanho not in ["1024", "2048"]:
-        messagebox.showerror("Erro", "Tamanho da chave inválido (1024 ou 2048)")
+        messagebox.showerror(
+            "Erro", "Tamanho da chave inválido (1024 ou 2048)")
         return
     gerar_chaves(int(tamanho))
     messagebox.showinfo("Sucesso", "Chaves geradas com sucesso!")
 
+
 def executar_criar_envelope():
     try:
         if aes_tam_var.get() not in ["16", "24", "32"]:
-            messagebox.showerror("Erro", "Tamanho da chave AES inválido. Use 16, 24 ou 32 bytes.")
+            messagebox.showerror(
+                "Erro", "Tamanho da chave AES inválido. Use 16, 24 ou 32 bytes.")
             return
 
         criar_envelope(
@@ -26,11 +31,14 @@ def executar_criar_envelope():
             chave_publica_path=entrada_pub.get(),
             tamanho_aes=int(aes_tam_var.get()),
             modo_aes=modo_aes_var.get(),
-            saida_base64=(saida_var.get() == "Base64")
+            saida_base64=(saida_var.get() == "Base64"),
+            saida_msg_path=saida_msg_entry.get(),
+            saida_chave_path=saida_chave_entry.get()
         )
         messagebox.showinfo("Sucesso", "Envelope criado com sucesso!")
     except Exception as e:
         messagebox.showerror("Erro", str(e))
+
 
 def executar_abrir_envelope():
     try:
@@ -44,11 +52,12 @@ def executar_abrir_envelope():
         messagebox.showerror("Erro", str(e))
 
 
+# Configuração principal da janela
 root = tk.Tk()
 root.title("Envelope Digital - Segurança em Sistemas")
 root.geometry("500x600")
 
-# Canvas e Scrollbar
+# Canvas e Scrollbar para permitir rolagem
 canvas = tk.Canvas(root)
 scrollbar = ttk.Scrollbar(root, orient="vertical", command=canvas.yview)
 canvas.configure(yscrollcommand=scrollbar.set)
@@ -62,12 +71,11 @@ def on_mouse_wheel(event):
 
 canvas.bind_all("<MouseWheel>", on_mouse_wheel)
 
-# Frame interno
+# Frame interno para conter os widgets
 scrollable_frame = ttk.Frame(canvas)
 
 # Criar o window e guardar o ID para usar depois
 frame_id = canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
-
 
 # Ajustar scrollregion dinamicamente
 def on_configure(event):
@@ -83,6 +91,7 @@ canvas.bind("<Configure>", ajustar_largura)
 
 # --- Frames e widgets ---
 
+# Frame 1: Gerar Chaves RSA
 frame1 = ttk.LabelFrame(scrollable_frame, text="1. Gerar Chaves RSA")
 frame1.pack(padx=10, pady=10, fill="x")
 
@@ -96,6 +105,7 @@ tamanho_menu.pack(padx=5, pady=5, fill="x")
 btn_gerar = ttk.Button(frame1, text="Gerar Chaves", command=executar_gerar_chaves)
 btn_gerar.pack(pady=5)
 
+# Frame 2: Criar Envelope Digital
 frame2 = ttk.LabelFrame(scrollable_frame, text="2. Criar Envelope Digital")
 frame2.pack(padx=10, pady=10, fill="x")
 
@@ -123,6 +133,16 @@ modo_aes_var = tk.StringVar(value="ECB")
 modo_menu = ttk.Combobox(frame2, textvariable=modo_aes_var, values=["ECB", "CBC"], state="readonly")
 modo_menu.pack(padx=5, pady=2, fill="x")
 
+ttkk_lbl_saida_msg = ttk.Label(frame2, text="Nome do arquivo da mensagem cifrada (sem extensão):")
+ttkk_lbl_saida_msg.pack(anchor="w", padx=5, pady=2)
+saida_msg_entry = ttk.Entry(frame2)
+saida_msg_entry.pack(padx=5, fill="x")
+
+ttkk_lbl_saida_chave = ttk.Label(frame2, text="Nome do arquivo da chave cifrada (sem extensão):")
+ttkk_lbl_saida_chave.pack(anchor="w", padx=5, pady=2)
+saida_chave_entry = ttk.Entry(frame2)
+saida_chave_entry.pack(padx=5, fill="x")
+
 ttkk_lbl6 = ttk.Label(frame2, text="Formato de saída dos arquivos cifrados:")
 ttkk_lbl6.pack(anchor="w", padx=5, pady=2)
 saida_var = tk.StringVar(value="Base64")
@@ -131,6 +151,7 @@ saida_menu.pack(padx=5, pady=2, fill="x")
 
 ttk.Button(frame2, text="Criar Envelope", command=executar_criar_envelope).pack(pady=5)
 
+# Frame 3: Abrir Envelope Digital
 frame3 = ttk.LabelFrame(scrollable_frame, text="3. Abrir Envelope Digital")
 frame3.pack(padx=10, pady=10, fill="x")
 
@@ -154,4 +175,5 @@ entrada_format_menu.pack(padx=5, pady=2, fill="x")
 
 ttk.Button(frame3, text="Abrir Envelope", command=executar_abrir_envelope).pack(pady=5)
 
+# Iniciar o loop principal da interface
 root.mainloop()

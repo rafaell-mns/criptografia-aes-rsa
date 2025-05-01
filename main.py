@@ -12,11 +12,14 @@ def gerar_chaves(tamanho=2048):
         f.write(chave.publickey().export_key())
     print("Chaves RSA geradas com sucesso!")
 
-def criar_envelope(entrada, chave_publica_path, tamanho_aes, modo_aes, saida_base64, chave_aes_fixa=None):
+def criar_envelope(entrada, chave_publica_path, tamanho_aes, modo_aes, saida_base64,
+                   saida_msg_path="mensagem_cifrada", saida_chave_path="chave_cifrada", chave_aes_fixa=None):
     if not os.path.exists(entrada):
         raise FileNotFoundError(f"Arquivo de entrada '{entrada}' não encontrado.")
     if not os.path.exists(chave_publica_path):
         raise FileNotFoundError(f"Arquivo de chave pública '{chave_publica_path}' não encontrado.")
+
+    ext = ".b64" if saida_base64 else ".hex"
 
     with open(entrada, "rb") as f:
         dados = f.read()
@@ -45,12 +48,12 @@ def criar_envelope(entrada, chave_publica_path, tamanho_aes, modo_aes, saida_bas
         chave_cifrada_str = chave_cifrada.hex()
         iv_saida = iv.hex() if iv else None
 
-    with open("mensagem_cifrada.txt", "w") as f:
+    with open(saida_msg_path + ext, "w") as f:
         f.write(msg_cifrada_str)
-    with open("chave_cifrada.txt", "w") as f:
+    with open(saida_chave_path + ext, "w") as f:
         f.write(chave_cifrada_str)
     if iv_saida:
-        with open("iv.txt", "w") as f:
+        with open("iv" + ext, "w") as f:
             f.write(iv_saida)
 
     print("Envelope criado com sucesso!")
