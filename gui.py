@@ -270,7 +270,9 @@ class EnvelopeDigitalApp:
                     f"Detalhes do erro: {str(e)}"
                 )
             else:
-                messagebox.showerror("Erro ao abrir envelope", f"Erro: {str(e)}")
+                messagebox.showerror("Erro ao abrir envelope", f"Erro: Verifique se os modos AES (ECB/CBC) estão corretos\nOu se os dados codificados que você informou (base64/hex) foram os mesmos da criptografia.\n"
+                    f"Detalhes do erro: {str(e)}"
+                )
             self.log(f"Erro ao abrir envelope: {str(e)}")
 
 
