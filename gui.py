@@ -140,7 +140,10 @@ class EnvelopeDigitalApp:
     def criar_frame_abrir_envelope(self):
         frame = ttk.Frame(self.root)
         ttk.Label(frame, text="Abrir Envelope Digital", font=("Arial", 16)).pack(pady=10)
-
+        ttk.Label(frame, text="Você criptografou com CyberChef?").pack(anchor="w", padx=5, pady=2)
+        self.cyberchef_flag = tk.BooleanVar(value=False)
+        cyberchef_checkbox = ttk.Checkbutton(frame, text="Sim", variable=self.cyberchef_flag)
+        cyberchef_checkbox.pack(anchor="w", padx=5, pady=2)
         self.entrada_priv = self.criar_input_arquivo(frame, "Chave privada do destinatário (.pem):")
         self.entrada_chave_cifrada = self.criar_input_arquivo(frame, "Arquivo da chave AES cifrada:")
         self.entrada_msg_cifrada = self.criar_input_arquivo(frame, "Arquivo da mensagem cifrada:")
@@ -242,6 +245,10 @@ class EnvelopeDigitalApp:
 
             if self.modo_aes2_var.get() == "CBC" and not self.entrada_iv.get():
                 raise ValueError("O campo 'Arquivo IV' é obrigatório no modo CBC.")
+            
+            if self.modo_aes2_var.get() == "ECB" and self.entrada_iv.get():
+                raise ValueError("O campo 'Arquivo IV' não deve ser informado no modo ECB.")
+
 
             abrir_envelope(
                 chave_privada_path=self.entrada_priv.get(),
@@ -250,13 +257,22 @@ class EnvelopeDigitalApp:
                 path_chave_cifrada=self.entrada_chave_cifrada.get(),
                 path_msg_cifrada=self.entrada_msg_cifrada.get(),
                 path_iv=self.entrada_iv.get(),
+                cyberchef=self.cyberchef_flag.get(),
                 path_saida=self.saida_msg_decifrada.get()
             )
             messagebox.showinfo("Sucesso", "Envelope aberto com sucesso!")
             self.log("Envelope digital aberto com sucesso.")
-        except Exception as e:
-            messagebox.showerror("Erro ao abrir envelope", str(e))
+        except ValueError as e:
+            if "padding" in str(e).lower():
+                messagebox.showerror(
+                    "Erro ao abrir envelope", 
+                    f"Erro de padding: o modo AES informado pode estar incorreto (ex.: ECB em vez de CBC ou vice-versa).\n"
+                    f"Detalhes do erro: {str(e)}"
+                )
+            else:
+                messagebox.showerror("Erro ao abrir envelope", f"Erro: {str(e)}")
             self.log(f"Erro ao abrir envelope: {str(e)}")
+
 
 
 if __name__ == "__main__":
