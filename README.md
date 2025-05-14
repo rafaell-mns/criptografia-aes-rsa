@@ -15,7 +15,6 @@ Este projeto implementa um sistema de **criptografia híbrida** (AES + RSA), per
   - Chave AES cifrada
   - (Opcional) IV no modo CBC  
 - 🔓 **Abertura do envelope** com chave privada e descriptografia da mensagem
-- 🌐 **Compatível com o site 
 
 ## 🖼️ Interface gráfica
 
